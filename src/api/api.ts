@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Card } from '../context/AppContext';
 
 const api = axios.create({
-  baseURL: 'http://192.168.1.157:9050', // kendi backend URL'inle değiştir
+  baseURL: 'http://192.168.1.102:3000', // kendi backend URL'inle değiştir
   timeout: 5000,
 });
 

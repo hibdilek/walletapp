@@ -1,4 +1,3 @@
-// src/components/WalletScreen.tsx
 import React, { useContext, useState } from 'react';
 import { View, Text, Button, Alert, StyleSheet } from 'react-native';
 import { AppContext } from '../context/AppContext';
@@ -8,6 +7,14 @@ const WalletScreen = () => {
   const { user, balance, setBalance, cardInfo, setCardInfo } = useContext(AppContext);
   const [loading, setLoading] = useState(false);
 
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <Text>Kullanıcı bilgisi yok. Lütfen tekrar giriş yapın.</Text>
+      </View>
+    );
+  }
+
   const handleCreateCard = async () => {
     try {
       setLoading(true);
@@ -15,7 +22,7 @@ const WalletScreen = () => {
       setCardInfo(res.data.card);
       Alert.alert('Kart Oluşturuldu', `Kart: ${res.data.card.maskedPan}`);
     } catch (err) {
-      Alert.alert('Hata', 'Kart oluşturulamadı ' + (err || JSON.stringify(err)));
+      Alert.alert('Hata', 'Kart oluşturulamadı: ' + (err?.message || JSON.stringify(err)));
     } finally {
       setLoading(false);
     }
@@ -46,7 +53,7 @@ const WalletScreen = () => {
         Alert.alert('Ödeme Reddedildi');
       }
     } catch (err) {
-      Alert.alert('Hata', 'Ödeme başarısız'+ (err || JSON.stringify(err)));
+      Alert.alert('Hata', 'Ödeme başarısız: ' + (err?.message || JSON.stringify(err)));
     } finally {
       setLoading(false);
     }

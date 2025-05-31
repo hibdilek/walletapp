@@ -1,15 +1,29 @@
 import React, { useContext } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Button } from 'react-native';
 import { AppContext } from '../context/AppContext';
 
 const ProfileScreen = () => {
-  const { user } = useContext(AppContext);
+  const { setUser, user } = useContext(AppContext);
+
+  const handleLogout = () => {
+    setUser(null); // Kullanıcıyı sil → Login ekranına dön
+  };
+
+  // ❗ user null olabilir, önce kontrol et
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.header}>Kullanıcı bulunamadı</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <Text style={styles.header}>👤 Profil</Text>
       <Text>Ad: {user.name}</Text>
       <Text>ID: {user.id}</Text>
+      <Button title="Çıkış Yap" onPress={handleLogout} />
     </View>
   );
 };
