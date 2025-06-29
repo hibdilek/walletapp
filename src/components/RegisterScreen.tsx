@@ -35,7 +35,7 @@ const RegisterScreen = () => {
 
     try {
       const response = await axios.post<RegisterResponse>(
-        'http://192.168.1.102:3000/api/register',
+        'http://192.168.1.110:3000/api/register',
         {
           username : username ,
           password: pass,

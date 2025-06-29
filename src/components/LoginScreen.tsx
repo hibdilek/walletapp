@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, TextInput, Button, Alert, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Button, Alert, StyleSheet, TouchableOpacity } from 'react-native';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -27,7 +27,7 @@ const LoginScreen = () => {
     if (!username.trim() || !password.trim()) return;
 
     try {
-      const response = await axios.post<LoginResponse>('http://192.168.1.102:3000/api/login', {
+      const response = await axios.post<LoginResponse>('http://192.168.1.110:3000/api/login', {
         username,
         password,
       });
@@ -46,6 +46,9 @@ const LoginScreen = () => {
       Alert.alert('Hata', 'Sunucuya bağlanılamadı');
     }
   };
+  const navigateToRegister = () => {
+    navigation.navigate('Register'); // Register ekranına yönlendirme
+  };
 
   return (
     <View style={styles.container}>
@@ -61,6 +64,9 @@ const LoginScreen = () => {
       />
 
       <Button title="Giriş Yap" onPress={handleLogin} />
+      <TouchableOpacity onPress={navigateToRegister} style={styles.registerLink}>
+        <Text style={styles.registerText}>Hesabınız yok mu? Kayıt Olun</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -68,6 +74,14 @@ const LoginScreen = () => {
 const styles = StyleSheet.create({
   input: { borderWidth: 1, marginBottom: 10, padding: 8 },
   container: { padding: 80 },
+  registerLink: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  registerText: {
+    color: '#007AFF',
+    fontWeight: 'bold',
+  },
 });
 
 export default LoginScreen;

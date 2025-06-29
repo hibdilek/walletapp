@@ -45,7 +45,7 @@ app.post('/api/login', async (req, res) => {
 
   try {
     const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
-    if (result.rows.length === 0) {
+    if (result.rows.length === 0) { 
       return res.json({ success: false, message: 'Kullanıcı bulunamadı.' });
     }
 
@@ -65,5 +65,5 @@ app.post('/api/login', async (req, res) => {
 
 // 🚀 Start server
 app.listen(3000, () => {
-  console.log('API listening on http://192.168.1.102:3000');
+  console.log('API listening on http://192.168.1.110:3000');
 });
