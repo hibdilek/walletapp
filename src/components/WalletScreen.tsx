@@ -1,7 +1,10 @@
 import React, { useContext, useState } from 'react';
 import { View, Text, Button, Alert, StyleSheet } from 'react-native';
-import { AppContext } from '../context/AppContext';
-import { createCard, loadBalance, makePayment } from '../api/api';
+import { AppContext, Card } from '../context/AppContext';
+import { loadBalance, makePayment } from '../api/api';
+import axios from 'axios'; // AxiosError'ı özellikle import edin
+  
+
 
 const WalletScreen = () => {
   const { user, balance, setBalance, cardInfo, setCardInfo } = useContext(AppContext);
@@ -14,19 +17,47 @@ const WalletScreen = () => {
       </View>
     );
   }
+ 
 
-  const handleCreateCard = async () => {
-    try {
-      setLoading(true);
-      const res = await createCard(user.id);
-      setCardInfo(res.data.card);
-      Alert.alert('Kart Oluşturuldu', `Kart: ${res.data.card.maskedPan}`);
-    } catch (err) {
-      Alert.alert('Hata', 'Kart oluşturulamadı: ' + (err?.message || JSON.stringify(err)));
-    } finally {
-      setLoading(false);
+interface ApiResponse {
+  success: boolean;
+  card?: Card;
+  message?: string;
+}
+
+const handleCreateCard = async () => {
+  try {
+    setLoading(true);
+    
+    // 1. API isteği
+    const res = await axios.post<ApiResponse>('http://192.168.1.110:3000/api/createCard', {
+      userId: user.name // Backend'in beklediği parametre adı
+    });
+
+    // 2. Yanıt validasyonu
+    if (!res.data.success || !res.data.card) {
+      throw new Error(res.data.message || 'Kart oluşturulamadı');
     }
-  };
+
+    setCardInfo(res.data.card);
+    Alert.alert(
+      'Kart Oluşturuldu', 
+      `Kart: ${res.data.card.masked_pan}\nBakiye: ${res.data.card.balance} ₺`
+    );
+    
+  } catch (err) {
+    // 3. Gelişmiş hata yönetimi
+    
+
+    Alert.alert('Hata', err);
+    console.error('Kart oluşturma hatası:', err);
+    
+  } finally {
+    setLoading(false);
+  }
+};
+
+
 
   const handleLoadBalance = async () => {
     try {
@@ -65,7 +96,7 @@ const WalletScreen = () => {
       <Text style={styles.balance}>Bakiye: {balance} TL</Text>
 
       {cardInfo && (
-        <Text style={styles.cardInfo}>Kart: {cardInfo.maskedPan}</Text>
+        <Text style={styles.cardInfo}>Kart: {cardInfo.masked_pan}</Text>
       )}
 
       <View style={styles.buttonGroup}>

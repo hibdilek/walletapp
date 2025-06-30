@@ -3,8 +3,12 @@ import React, { createContext, useState, ReactNode } from 'react';
 export type User = { id: string; name: string ; pass:string};
  
 export type Card = {
-  maskedPan: string;
-  token: string;
+   id: number;
+    user_id: string;
+    masked_pan: string;
+    token: string;
+    balance: number;
+    created_at: string;
 };
 
 export type AppContextType = {
