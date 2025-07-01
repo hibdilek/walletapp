@@ -4,7 +4,7 @@ export type User = { id: string; name: string ; pass:string};
  
 export type Card = {
    id: number;
-    user_id: string;
+    username: string;
     masked_pan: string;
     token: string;
     balance: number;

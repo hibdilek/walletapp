@@ -11,40 +11,106 @@ app.use(express.json());
 const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
-  database: 'wallet',
+  database: 'postgres',
   password: '1111',
   port: 5432,
 });
 
 // 🔐 Password hashing
 const saltRounds = 10;
+
 // Kart oluşturma endpoint'i (PostgreSQL uyumlu)
 app.post('/api/createCard', async (req, res) => {
+  const client = await pool.connect();
   try {
     const { userId } = req.body;
     
-    // Rastgele kart bilgileri oluştur
-    const masked_pan= generateMaskedCardNumber(); // Örnek: '****-****-****-4242'
-    const token = generateToken(); // Güvenli rastgele token
-    const balance = 0; // Varsayılan bakiye
+    // 1. Kullanıcı var mı kontrol et (hem ID hem username için)
+    const userCheck = await client.query(
+      `SELECT id FROM users 
+       WHERE id = $1 OR username = $1 
+       LIMIT 1`,
+      [userId]
+    );
+    
+    if (userCheck.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: `Kullanıcı bulunamadı: ${userId}`,
+        suggestion: 'Lütfen geçerli bir kullanıcı ID veya kullanıcı adı girin'
+      });
+    }
 
-    // Veritabanına kaydet
-    const result = await pool.query(
+    const actualUserId = userCheck.rows[0].id;
+
+    // 2. Transaction başlat
+    await client.query('BEGIN');
+
+    // 3. Kart oluştur
+    const result = await client.query(
       `INSERT INTO cards (user_id, masked_pan, token, balance, created_at) 
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [userId, masked_pan, token, balance, new Date()]
+       VALUES ($1, $2, $3, $4, $5) 
+       RETURNING *`,
+      [
+        actualUserId, 
+        generateMaskedCardNumber(), 
+        generateToken(), 
+        0, 
+        new Date()
+      ]
     );
 
+    await client.query('COMMIT');
+    
     res.status(201).json({ 
       success: true,
-      card: result.rows[0]
+      card: result.rows[0],
+      message: 'Kart başarıyla oluşturuldu'
+    });
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Kart oluşturma hatası:', {
+      error: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
     });
     
-  } catch (error) {
-    console.error('Kart oluşturma hatası:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Kart oluşturulamadı'
+      message: 'Kart oluşturma işlemi başarısız',
+      errorDetail: error.detail,
+      technicalInfo: {
+        code: error.code,
+        constraint: error.constraint
+      }
+    });
+  } finally {
+    client.release();
+  }
+});
+
+// Kullanıcının kartlarını getirme endpoint'i
+app.post('/api/getCards', async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    // Veritabanından kullanıcının kartlarını sorgula
+    const result = await pool.query(
+      'SELECT * FROM cards WHERE user_id = $1 ORDER BY created_at DESC',
+      [userId]
+    );
+
+    res.status(200).json({
+      success: true,
+      cards: result.rows
+    });
+
+  } catch (error) {
+    console.error('Kartları getirme hatası:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Kartlar getirilemedi'
     });
   }
 });
@@ -58,6 +124,7 @@ function generateMaskedCardNumber() {
 function generateToken() {
   return require('crypto').randomBytes(16).toString('hex');
 }
+
 // ✅ Register endpoint
 app.post('/api/register', async (req, res) => {
   const { username, password } = req.body;
