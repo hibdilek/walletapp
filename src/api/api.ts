@@ -10,8 +10,10 @@ const api = axios.create({
 export const createCard = (userId: string) =>
   api.post<{ card: Card }>('/card/create', { userId });
 
-export const loadBalance = (userId: string, amount: number) =>
-  api.post<{ newBalance: number }>('/balance/load', { userId, amount });
+// src/api/api.ts
+export const loadBalance = (userId: string, amount: number, cardToken: string) => {
+  return api.post(`/loadBalance`, { userId, amount, cardToken });
+};
 
 export const makePayment = (userId: string, token: string, amount: number) =>
   api.post<{ success: boolean; newBalance: number }>('/payment/nfc', {

@@ -11,10 +11,10 @@ const WalletScreen = () => {
 
   // Kullanıcı kartlarını yükleme efekti
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
       fetchUserCards();
     }
-  }, [user]);
+  }, [user?.id]);
 
   if (!user) {
     return (
@@ -30,7 +30,12 @@ const WalletScreen = () => {
     message?: string;
     cards?: Card[];
   }
-
+ // Sadece balance yükleme yanıtı için spesifik bir arayüz
+interface ApiResponseBalance {
+  success: boolean;
+  newBalance: number;
+  message?: string;
+}
   // Kullanıcının kartlarını getirme fonksiyonu
   const fetchUserCards = async () => {
     try {
@@ -95,18 +100,58 @@ const WalletScreen = () => {
     console.error('Kart oluşturma hatası:', err);
   }
 };
-  const handleLoadBalance = async () => {
+  // WalletScreen.tsx içinde
+const handleLoadBalance = async () => {
+    // 1. Kart seçili mi kontrol et
+    if (!cardInfo) {
+      Alert.alert('Uyarı', 'Lütfen bakiye yüklemek için bir kart seçin.');
+      return;
+    }
+
+    // 2. Kullanıcı ID'sinin mevcut olduğundan emin ol
+    if (!user?.id) {
+        Alert.alert('Hata', 'Kullanıcı bilgisi eksik. Lütfen yeniden giriş yapın.');
+        return;
+    }
+
+    const amountToLoad = 100; // Yüklenecek sabit miktar (isterseniz dinamik yapabilirsiniz)
+
     try {
       setLoading(true);
-      const res = await loadBalance(user.id, 100);
-      setBalance(res.data.newBalance);
-      Alert.alert('Bakiye Yüklendi', `Yeni Bakiye: ${res.data.newBalance} TL`);
+      // Backend'e atılacak POST isteği, istediğiniz JSON formatında
+      const res = await axios.post<ApiResponseBalance>(
+        'http://192.168.1.110:3000/api/loadBalance',
+        {
+          userId: user.id,          // AppContext'ten gelen dinamik kullanıcı ID'si
+          amount: amountToLoad,     // Belirlenen miktar
+          cardToken: cardInfo.token // Seçili kartın dinamik token'ı
+        }
+      );
+
+      // Yanıtın başarı durumunu kontrol et
+      if (res.data.success) {
+        setBalance(res.data.newBalance); // Global bakiye state'ini güncelle
+        Alert.alert('Bakiye Yüklendi', `Yeni Bakiye: ${res.data.newBalance} TL`);
+        fetchUserCards(); // Kart listesini ve bakiyeleri güncel verilerle yeniden çek
+      } else {
+        // Backend'den hata mesajı gelirse onu göster
+        Alert.alert('Hata', res.data.message || 'Bakiye yüklenemedi.');
+      }
     } catch (err) {
-      Alert.alert('Hata', 'Bakiye yüklenemedi');
+      let errorMessage = 'Bakiye yüklenirken beklenmeyen bir hata oluştu.';
+      if (axios.isAxiosError(err)) {
+        errorMessage = `Bakiye yüklenirken hata oluştu: ${err.response?.data?.message || err.message || err.response?.statusText}`;
+      } else if (err instanceof Error) {
+        errorMessage = `Bakiye yüklenirken hata oluştu: ${err.message}`;
+      }
+      Alert.alert('Hata', errorMessage);
+      console.error('Bakiye yükleme hatası:', err);
     } finally {
       setLoading(false);
     }
   };
+
+
 
   const handlePayment = async () => {
     if (!cardInfo) return;
@@ -175,8 +220,10 @@ const WalletScreen = () => {
         contentContainerStyle={styles.cardList}
         ListEmptyComponent={
           <Text style={styles.emptyText}>Henüz kartınız bulunmamaktadır.</Text>
+          
         }
       />
+      <Button title="Kartları Elle Getir" onPress={fetchUserCards} />
     </View>
   );
 };
