@@ -56,28 +56,39 @@ const WalletScreen = () => {
   const handleCreateCard = async () => {
   try {
     if (!user?.id) {
-      throw new Error('Kullanıcı bilgisi eksik');
+      throw new Error("Kullanıcı bilgisi eksik");
     }
 
     const res = await axios.post<ApiResponse>('http://192.168.1.110:3000/api/createCard', {
-      userId: user.name // user.name yerine user.id kullanıyoruz
+      userId: user.id // user.name değil, user.id kullanıyoruz
     });
 
     if (!res.data.success) {
       throw new Error(res.data.message || 'Kart oluşturulamadı');
     }
 
-    // Başarılı yanıt işleme
-    setCards(prev => [res.data.card, ...prev]);
+    // Kart bilgisinin geldiğinden emin ol
+    if (!res.data.card) {
+      throw new Error('Kart bilgisi alınamadı');
+    }
+
+    // State güncelleme
+    setCards(prev => [res.data.card as Card, ...prev]);
     Alert.alert('Başarılı', 'Kart oluşturuldu');
     
-  } catch (err) {
+  } catch (err: unknown) {
     let errorMessage = 'Kart oluşturulamadı';
     
-    if (err.response?.data?.detail) {
-      errorMessage += `: ${err.response.data.detail}`;
-    } else if (err.message) {
+    // Hata tipini kontrol et
+    if (axios.isAxiosError(err)) {
+      // Axios hatası
+      errorMessage += `: ${err.response?.data?.detail || err.message}`;
+    } else if (err instanceof Error) {
+      // Genel hata
       errorMessage += `: ${err.message}`;
+    } else {
+      // Bilinmeyen hata
+      errorMessage += ': Bilinmeyen hata türü';
     }
     
     Alert.alert('Hata', errorMessage);
@@ -109,7 +120,7 @@ const WalletScreen = () => {
         Alert.alert('Ödeme Reddedildi');
       }
     } catch (err) {
-      Alert.alert('Hata', 'Ödeme başarısız: ' + (err?.message || JSON.stringify(err)));
+      //Alert.alert('Hata', 'Ödeme başarısız: ' + (err?.message || JSON.stringify(err)));
     } finally {
       setLoading(false);
     }

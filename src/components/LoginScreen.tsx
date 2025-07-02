@@ -34,7 +34,7 @@ const LoginScreen = () => {
 
       if (response.data.success) {
         // ✅ AppContext'e kullanıcıyı kaydet
-        setUser({ id: username, name: username });
+        setUser({ id: username , name: username });
 
         Alert.alert('Başarılı', 'Giriş tamamlandı!', [
           { text: 'Tamam', onPress: () => navigation.navigate('Main') },

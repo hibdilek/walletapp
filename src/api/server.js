@@ -27,8 +27,8 @@ app.post('/api/createCard', async (req, res) => {
     
     // 1. Kullanıcı var mı kontrol et (hem ID hem username için)
     const userCheck = await client.query(
-      `SELECT id FROM users 
-       WHERE id = $1 OR username = $1 
+      `SELECT user_id FROM users 
+       WHERE username = $1 
        LIMIT 1`,
       [userId]
     );
@@ -41,11 +41,11 @@ app.post('/api/createCard', async (req, res) => {
       });
     }
 
-    const actualUserId = userCheck.rows[0].id;
+    const actualUserId = userCheck.rows[0].user_id;
 
     // 2. Transaction başlat
     await client.query('BEGIN');
-
+    console.log('USER ID : '  ,actualUserId ) ; 
     // 3. Kart oluştur
     const result = await client.query(
       `INSERT INTO cards (user_id, masked_pan, token, balance, created_at) 
